@@ -68,7 +68,28 @@ class FuelPortalTest extends TestCase
         $response
             ->assertOk()
             ->assertSee('Busca gasolineras por provincia, municipio o marca')
-            ->assertSee('Resultados del buscador');
+            ->assertSee('Resultados del buscador')
+            ->assertSee('data-gas-catalog-form', false)
+            ->assertSee(route('api.stations.catalogs'), false);
+    }
+
+    public function test_station_catalog_api_returns_json_for_dependency_selects(): void
+    {
+        $station = GasStation::query()
+            ->whereNotNull('province')
+            ->whereNotNull('municipality')
+            ->whereNotNull('brand')
+            ->firstOrFail();
+
+        $response = $this->getJson('/api/stations/catalogs?province='.urlencode((string) $station->province));
+
+        $response->assertOk();
+
+        $payload = $response->json();
+
+        $this->assertContains($station->province, $payload['provinces']);
+        $this->assertContains($station->brand, $payload['brands']);
+        $this->assertContains($station->municipality, $payload['municipalities']);
     }
 
     public function test_station_detail_and_api_history_are_available(): void
@@ -82,7 +103,10 @@ class FuelPortalTest extends TestCase
             ->assertSee('Últimos precios')
             ->assertSee('Mapa OpenStreetMap')
             ->assertSee('Abrir en OpenStreetMap')
-            ->assertSee('station-history-chart');
+            ->assertSee('station-history-chart')
+            ->assertSee('Widget social y OG image')
+            ->assertSee('api/social-cards/render.jpg', false)
+            ->assertSee('og:image', false);
 
         $this->getJson('/api/stations/'.$station->id.'/prices?fuel=diesel_a&days=10')
             ->assertOk()
@@ -91,6 +115,28 @@ class FuelPortalTest extends TestCase
                 'station' => ['id', 'brand', 'municipality', 'address'],
                 'history' => ['fuel', 'fuel_label', 'points'],
             ]);
+    }
+
+    public function test_social_card_api_returns_metadata_and_jpg_image(): void
+    {
+        $station = GasStation::query()->firstOrFail();
+
+        $metadataResponse = $this->getJson('/api/social-cards?id='.$station->id.'&social=twitter&type=summary_large_image&og_type=website');
+
+        $metadataResponse
+            ->assertOk()
+            ->assertJsonPath('station.id', $station->id)
+            ->assertJsonPath('preset.social', 'twitter')
+            ->assertJsonPath('preset.type', 'summary_large_image')
+            ->assertJsonPath('preset.og_type', 'website');
+
+        $imageUrl = $metadataResponse->json('image_url');
+        $imagePath = parse_url($imageUrl, PHP_URL_PATH) ?: '';
+        $imageQuery = parse_url($imageUrl, PHP_URL_QUERY);
+
+        $this->get($imagePath.($imageQuery ? '?'.$imageQuery : ''))
+            ->assertOk()
+            ->assertHeader('content-type', 'image/jpeg');
     }
 
     public function test_reports_page_is_available(): void

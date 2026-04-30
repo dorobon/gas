@@ -20,6 +20,9 @@ El proyecto usa SQLite por defecto y puede funcionar con datos demo o con import
 - importación oficial desde XLS con fallback REST JSON
 - scheduler diario a las `07:00`
 - endpoint protegido para importación manual
+- API de miniaturas OG/Twitter en JPG por estación
+- cache de tarjetas sociales durante 24 horas
+- sistema de logos locales por marca con auditoría de pendientes
 - tests funcionales del portal
 
 ## Rutas principales
@@ -112,6 +115,8 @@ PRICE_IMPORT_TOKEN=change-me-before-production
 PRICE_IMPORT_SOURCE=https://geoportalgasolineras.es/resources/files/preciosEESS_es.xls
 PRICE_IMPORT_REST_SOURCE=https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/
 PRICE_IMPORT_STRATEGY=auto
+SOCIAL_CARD_CACHE_TTL=1440
+SOCIAL_CARD_NODE_BINARY=node
 ```
 
 ### Importación por consola
@@ -140,12 +145,73 @@ Admite:
 - body `token`
 - body `source=auto|xls|rest`
 
+## Social cards JPG para OG, Twitter, WhatsApp y más
+
+La ficha de cada estación ahora expone un widget que consume una API nueva para generar miniaturas JPG listas para compartir o incrustar en cualquier HTML.
+
+### Endpoints
+
+- `GET /api/social-cards`
+  - devuelve JSON con metadatos, dimensiones, snippets HTML y la URL final de imagen
+- `GET /api/social-cards/render.jpg`
+  - devuelve la imagen `image/jpeg` lista para usar en `og:image`, `twitter:image` o `<img src="...">`
+
+### Parámetros GET
+
+- `id` → id de la gasolinera
+- `social` → preset social (`facebook`, `twitter`, `whatsapp`, `linkedin`, `telegram`, `generic`)
+- `type` → variante de tamaño según la red (`landscape`, `square`, `summary`, `summary_large_image`, ...)
+- `og_type` → tipo Open Graph soportado (`website`, `article`, `profile`, `book`, `video.other`, etc.)
+
+### Conceptos incluidos en la miniatura
+
+- marca
+- localidad
+- dirección
+- Gasóleo A
+- Gasolina 95 E10
+- Gasolina 98 E5
+- Gasóleo Premium
+- GLP
+- Gas natural comprimido
+
+### Cache
+
+- cada JPG generado se cachea durante `24h`
+- si cambia la captura más reciente de precios o el logo local de la marca, se genera una nueva versión
+
+## Logos de marca
+
+Los logos se resuelven desde archivos locales aprobados en:
+
+- `public/brand-logos/`
+
+Extensiones soportadas:
+
+- `svg`
+- `png`
+- `webp`
+- `jpg`
+- `jpeg`
+
+Si una marca no tiene logo cargado todavía, el sistema usa un badge fallback con iniciales. Para auditar qué falta por recopilar:
+
+```bash
+php artisan fuel:brand-logos:audit
+php artisan fuel:brand-logos:audit --write-manifest
+```
+
+El manifest opcional se guarda en:
+
+- `storage/app/brand-logos/pending-brands.json`
+
 ## Comandos útiles
 
 ```bash
 php artisan fuel:about
 php artisan fuel:seed-demo --refresh
 php artisan fuel:import --source=auto
+php artisan fuel:brand-logos:audit
 ```
 
 ## Scheduler
@@ -182,6 +248,7 @@ Si tu entorno CLI pierde SQLite por configuración local, revisa `php.ini` antes
 - `app/Http/Controllers/ReportController.php`
 - `app/Http/Controllers/ImportController.php`
 - `app/Http/Controllers/Api/StationPriceController.php`
+- `app/Http/Controllers/Api/StationSocialCardController.php`
 
 ### Vistas
 
@@ -189,6 +256,7 @@ Si tu entorno CLI pierde SQLite por configuración local, revisa `php.ini` antes
 - `resources/views/prices/*`
 - `resources/views/stations/*`
 - `resources/views/reports/*`
+- `resources/views/components/brand-badge.blade.php`
 
 ## Notas operativas
 

@@ -11,5 +11,13 @@ interface GasStationRepositoryInterface
 
     public function findWithPricing(GasStation|int $station): ?GasStation;
 
+    public function getProvinces(): array;
+
+    public function getMunicipalities(?string $province = null): array;
+
+    public function getBrands(): array;
+
+    public function getCatalogOptions(?string $province = null): array;
+
     public function getFilterOptions(array $filters = []): array;
 }

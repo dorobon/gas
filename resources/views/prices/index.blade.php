@@ -148,7 +148,10 @@
                 <div class="mini-list">
                     @foreach($dashboard['cheapest_highlights'] as $entry)
                         <a class="mini-list__item" href="{{ route('stations.show', [$entry->station, $entry->station?->route_slug]) }}">
-                            <strong>{{ $entry->station?->brand ?: 'Gasolinera' }}</strong>
+                            <span class="brand-line">
+                                <x-brand-badge :brand="$entry->station?->brand" size="sm" />
+                                <strong>{{ $entry->station?->brand ?: 'Gasolinera' }}</strong>
+                            </span>
                             <div class="muted">{{ $entry->station?->address }} · {{ $entry->station?->municipality }}</div>
                             <div style="margin-top: 0.5rem; font-weight: 700;">{{ $formatPrice($entry->diesel_a) }}</div>
                         </a>

@@ -9,6 +9,30 @@ use Illuminate\Database\Eloquent\Builder;
 
 class GasStationRepository implements GasStationRepositoryInterface
 {
+    public function getProvinces(): array
+    {
+        return $this->getDistinctValues('province');
+    }
+
+    public function getMunicipalities(?string $province = null): array
+    {
+        return $this->getDistinctValues('municipality', $province);
+    }
+
+    public function getBrands(): array
+    {
+        return $this->getDistinctValues('brand');
+    }
+
+    public function getCatalogOptions(?string $province = null): array
+    {
+        return [
+            'provinces' => $this->getProvinces(),
+            'municipalities' => $this->getMunicipalities($province),
+            'brands' => $this->getBrands(),
+        ];
+    }
+
     public function search(array $filters = [], int $perPage = 12): LengthAwarePaginator
     {
         return GasStation::query()
@@ -51,26 +75,23 @@ class GasStationRepository implements GasStationRepositoryInterface
     public function getFilterOptions(array $filters = []): array
     {
         return [
-            'provinces' => GasStation::query()
-                ->whereNotNull('province')
-                ->distinct()
-                ->orderBy('province')
-                ->pluck('province')
-                ->all(),
-            'municipalities' => GasStation::query()
-                ->when($filters['province'] ?? null, fn (Builder $query, string $province) => $query->where('province', $province))
-                ->whereNotNull('municipality')
-                ->distinct()
-                ->orderBy('municipality')
-                ->pluck('municipality')
-                ->all(),
-            'brands' => GasStation::query()
-                ->whereNotNull('brand')
-                ->distinct()
-                ->orderBy('brand')
-                ->pluck('brand')
-                ->all(),
+            'provinces' => $this->getProvinces(),
+            'municipalities' => $this->getMunicipalities($filters['province'] ?? null),
+            'brands' => $this->getBrands(),
             'fuels' => config('fuel.fuels'),
         ];
+    }
+
+    private function getDistinctValues(string $column, ?string $province = null): array
+    {
+        return GasStation::query()
+            ->when($province !== null && $province !== '', fn (Builder $query) => $query->where('province', $province))
+            ->whereNotNull($column)
+            ->where($column, '!=', '')
+            ->distinct()
+            ->orderBy($column)
+            ->pluck($column)
+            ->values()
+            ->all();
     }
 }

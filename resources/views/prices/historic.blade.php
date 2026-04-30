@@ -57,18 +57,15 @@
             <label>
                 Carburante
                 <select name="fuel">
-                    @foreach($options['fuels'] as $fuelKey => $fuelMeta)
+                    @foreach($fuelOptions as $fuelKey => $fuelMeta)
                         <option value="{{ $fuelKey }}" @selected(($filters['fuel'] ?? config('fuel.default_fuel')) === $fuelKey)>{{ $fuelMeta['label'] }}</option>
                     @endforeach
                 </select>
             </label>
             <label>
                 Provincia
-                <select name="province">
-                    <option value="">Toda España</option>
-                    @foreach($options['provinces'] as $province)
-                        <option value="{{ $province }}" @selected(($filters['province'] ?? '') === $province)>{{ $province }}</option>
-                    @endforeach
+                <select name="province" data-gas-catalog-province data-selected-value="{{ $filters['province'] ?? '' }}">
+                    <option value="">Cargando provincias...</option>
                 </select>
             </label>
             <label>

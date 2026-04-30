@@ -14,38 +14,29 @@
     </section>
 
     <section class="section card">
-        <form method="GET" action="{{ route('prices.cheapest') }}" class="form-grid">
+        <form method="GET" action="{{ route('prices.cheapest') }}" class="form-grid" data-gas-catalog-form data-gas-catalogs-url="{{ route('api.stations.catalogs') }}">
             <label>
                 Provincia
-                <select name="province">
-                    <option value="">Toda España</option>
-                    @foreach($options['provinces'] as $province)
-                        <option value="{{ $province }}" @selected(($filters['province'] ?? '') === $province)>{{ $province }}</option>
-                    @endforeach
+                <select name="province" data-gas-catalog-province data-selected-value="{{ $filters['province'] ?? '' }}">
+                    <option value="">Cargando provincias...</option>
                 </select>
             </label>
             <label>
                 Municipio
-                <select name="municipality">
-                    <option value="">Todos</option>
-                    @foreach($options['municipalities'] as $municipality)
-                        <option value="{{ $municipality }}" @selected(($filters['municipality'] ?? '') === $municipality)>{{ $municipality }}</option>
-                    @endforeach
+                <select name="municipality" data-gas-catalog-municipality data-selected-value="{{ $filters['municipality'] ?? '' }}" disabled>
+                    <option value="">Elige una provincia primero</option>
                 </select>
             </label>
             <label>
                 Marca
-                <select name="brand">
-                    <option value="">Todas</option>
-                    @foreach($options['brands'] as $brand)
-                        <option value="{{ $brand }}" @selected(($filters['brand'] ?? '') === $brand)>{{ $brand }}</option>
-                    @endforeach
+                <select name="brand" data-gas-catalog-brand data-selected-value="{{ $filters['brand'] ?? '' }}">
+                    <option value="">Cargando marcas...</option>
                 </select>
             </label>
             <label>
                 Carburante
                 <select name="fuel">
-                    @foreach($options['fuels'] as $fuelKey => $fuelMeta)
+                    @foreach($fuelOptions as $fuelKey => $fuelMeta)
                         <option value="{{ $fuelKey }}" @selected(($filters['fuel'] ?? config('fuel.default_fuel')) === $fuelKey)>{{ $fuelMeta['label'] }}</option>
                     @endforeach
                 </select>
@@ -87,7 +78,10 @@
                         <tr>
                             <td>{{ $results->firstItem() + $index }}</td>
                             <td>
-                                <a href="{{ route('stations.show', [$station, $station?->route_slug]) }}"><strong>{{ $station?->brand ?: 'Gasolinera' }}</strong></a>
+                                <div class="brand-line">
+                                    <x-brand-badge :brand="$station?->brand" size="sm" />
+                                    <a href="{{ route('stations.show', [$station, $station?->route_slug]) }}"><strong>{{ $station?->brand ?: 'Gasolinera' }}</strong></a>
+                                </div>
                                 <div class="muted">{{ $station?->service_type === 'D' ? 'Autoservicio' : 'Con personal' }}</div>
                             </td>
                             <td>

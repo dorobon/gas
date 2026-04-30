@@ -1,5 +1,20 @@
 @extends('layouts.app')
 
+@php
+    $defaultSocial = config('social_cards.default_social', 'facebook');
+    $defaultSocialPreset = config('social_cards.socials.'.$defaultSocial);
+    $defaultSocialType = $defaultSocialPreset['default_type'];
+    $defaultOgType = $defaultSocialPreset['default_og_type'] ?? config('social_cards.default_og_type', 'website');
+    $defaultSocialSize = $defaultSocialPreset['types'][$defaultSocialType];
+    $defaultSocialImageUrl = route('api.social-cards.image', [
+        'id' => $station->id,
+        'social' => $defaultSocial,
+        'type' => $defaultSocialType,
+        'og_type' => $defaultOgType,
+    ]);
+@endphp
+
+@section('meta_type', $defaultOgType)
 @section('canonical_url', route('stations.show', [$station, $station->route_slug]))
 
 @section('content')
@@ -26,9 +41,14 @@
     @endphp
 
     <section class="hero">
-        <span class="eyebrow">Ficha de gasolinera</span>
-        <h1>{{ $station->brand ?: 'Gasolinera' }} · {{ $station->municipality }}</h1>
-        <p>{{ $station->address }}, {{ $station->postal_code }} · {{ $station->province }}. Consulta sus precios actualizados, horario, coordenadas, mapa y evolución reciente del combustible que más te interese.</p>
+        <div class="hero__brand">
+            <x-brand-badge :brand="$station->brand" size="xl" />
+            <div>
+                <span class="eyebrow">Ficha de gasolinera</span>
+                <h1>{{ $station->brand ?: 'Gasolinera' }} · {{ $station->municipality }}</h1>
+                <p>{{ $station->address }}, {{ $station->postal_code }} · {{ $station->province }}. Consulta sus precios actualizados, horario, coordenadas, mapa y evolución reciente del combustible que más te interese.</p>
+            </div>
+        </div>
     </section>
 
     <section class="section grid grid--wide">
@@ -166,6 +186,84 @@
         </div>
     </section>
 
+    <section class="section card">
+        <div class="section__heading">
+            <div>
+                <h2>Widget social y OG image</h2>
+                <p>Genera una miniatura JPG cacheada durante 24 horas y lista para integrarse en cualquier HTML o para alimentar validadores de Facebook, X/Twitter, WhatsApp, LinkedIn, Telegram y shares OG compatibles.</p>
+            </div>
+        </div>
+
+        <div class="widget-grid" data-social-widget data-endpoint="{{ route('api.social-cards.show') }}" data-station-id="{{ $station->id }}">
+            <div class="widget-panel widget-preview">
+                <img
+                    src="{{ $defaultSocialImageUrl }}"
+                    alt="Vista previa social de {{ $station->display_name }}"
+                    loading="lazy"
+                    decoding="async"
+                    data-social-preview
+                >
+                <div class="widget-meta">
+                    <span class="badge badge--flat" data-social-summary>{{ $defaultSocialPreset['label'] }} · {{ $defaultSocialSize['width'] }}×{{ $defaultSocialSize['height'] }} · og:type {{ $defaultOgType }}</span>
+                    <span class="widget-status" data-social-status>JPG lista para compartir.</span>
+                </div>
+            </div>
+
+            <div class="widget-panel">
+                <div class="form-grid">
+                    <label>
+                        Red social
+                        <select data-social-select>
+                            @foreach(config('social_cards.socials') as $socialKey => $socialMeta)
+                                <option value="{{ $socialKey }}" @selected($socialKey === $defaultSocial)>{{ $socialMeta['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+
+                    <label>
+                        Formato
+                        <select data-social-type-select></select>
+                    </label>
+
+                    <label>
+                        og:type
+                        <select data-social-og-type-select>
+                            @foreach(config('social_cards.og_types') as $ogTypeKey => $ogTypeLabel)
+                                <option value="{{ $ogTypeKey }}" @selected($ogTypeKey === $defaultOgType)>{{ $ogTypeKey }} · {{ $ogTypeLabel }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                </div>
+
+                <div class="code-block">
+                    <strong>URL JPG directa</strong>
+                    <input type="text" readonly value="{{ $defaultSocialImageUrl }}" data-social-url>
+                </div>
+
+                <div class="code-block">
+                    <strong>HTML para incrustar la miniatura</strong>
+                    <textarea rows="4" readonly data-social-img-html></textarea>
+                </div>
+
+                <div class="code-block">
+                    <strong>Metatags Open Graph / Twitter</strong>
+                    <textarea rows="8" readonly data-social-meta-html></textarea>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @push('social_meta')
+        <meta property="og:image" content="{{ $defaultSocialImageUrl }}">
+        <meta property="og:image:secure_url" content="{{ $defaultSocialImageUrl }}">
+        <meta property="og:image:type" content="image/jpeg">
+        <meta property="og:image:width" content="{{ $defaultSocialSize['width'] }}">
+        <meta property="og:image:height" content="{{ $defaultSocialSize['height'] }}">
+        <meta property="og:image:alt" content="Tarjeta social de {{ $station->display_name }} con precios actuales de carburantes">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:image" content="{{ $defaultSocialImageUrl }}">
+    @endpush
+
     @push('structured_data')
         <script type="application/ld+json">
             {!! json_encode([
@@ -193,5 +291,93 @@
 
     @push('scripts')
         <script type="application/json" id="station-history-chart-data">{!! json_encode($stationChart, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+        <script type="application/json" id="social-card-presets-data">{!! json_encode(config('social_cards.socials'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+        <script>
+            (() => {
+                const widget = document.querySelector('[data-social-widget]');
+
+                if (!widget) {
+                    return;
+                }
+
+                const presetsNode = document.getElementById('social-card-presets-data');
+                const presets = JSON.parse(presetsNode?.textContent || '{}');
+                const endpoint = widget.dataset.endpoint;
+                const stationId = widget.dataset.stationId;
+                const socialSelect = widget.querySelector('[data-social-select]');
+                const typeSelect = widget.querySelector('[data-social-type-select]');
+                const ogTypeSelect = widget.querySelector('[data-social-og-type-select]');
+                const preview = widget.querySelector('[data-social-preview]');
+                const summary = widget.querySelector('[data-social-summary]');
+                const status = widget.querySelector('[data-social-status]');
+                const urlInput = widget.querySelector('[data-social-url]');
+                const imgHtml = widget.querySelector('[data-social-img-html]');
+                const metaHtml = widget.querySelector('[data-social-meta-html]');
+
+                const fillTypeOptions = (selectedSocial, preferredType = null) => {
+                    const currentPreset = presets[selectedSocial] || {};
+                    const entries = Object.entries(currentPreset.types || {});
+
+                    typeSelect.innerHTML = entries.map(([value, meta]) => {
+                        const selected = value === (preferredType || currentPreset.default_type) ? ' selected' : '';
+
+                        return `<option value="${value}"${selected}>${meta.label} · ${meta.width}×${meta.height}</option>`;
+                    }).join('');
+                };
+
+                const hydrateWidget = async () => {
+                    status.textContent = 'Generando miniatura...';
+
+                    const params = new URLSearchParams({
+                        id: stationId,
+                        social: socialSelect.value,
+                        type: typeSelect.value,
+                        og_type: ogTypeSelect.value,
+                    });
+
+                    try {
+                        const response = await fetch(`${endpoint}?${params.toString()}`, {
+                            headers: {
+                                Accept: 'application/json',
+                            },
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('No se pudo construir la miniatura social.');
+                        }
+
+                        const payload = await response.json();
+
+                        preview.src = payload.image_url;
+                        preview.alt = payload.widget.alt;
+                        summary.textContent = `${payload.preset.social_label} · ${payload.preset.width}×${payload.preset.height} · og:type ${payload.preset.og_type}`;
+                        urlInput.value = payload.image_url;
+                        imgHtml.value = payload.widget.img_html;
+                        metaHtml.value = payload.widget.meta_html;
+                        status.textContent = 'JPG cacheada 24h y lista para pegar en cualquier web.';
+
+                        if (socialSelect.value !== payload.preset.social) {
+                            socialSelect.value = payload.preset.social;
+                        }
+
+                        fillTypeOptions(payload.preset.social, payload.preset.type);
+                        ogTypeSelect.value = payload.preset.og_type;
+                    } catch (error) {
+                        status.textContent = error.message || 'No se pudo generar la miniatura.';
+                    }
+                };
+
+                fillTypeOptions(socialSelect.value, '{{ $defaultSocialType }}');
+                hydrateWidget();
+
+                socialSelect.addEventListener('change', () => {
+                    fillTypeOptions(socialSelect.value);
+                    hydrateWidget();
+                });
+
+                typeSelect.addEventListener('change', hydrateWidget);
+                ogTypeSelect.addEventListener('change', hydrateWidget);
+            })();
+        </script>
     @endpush
 @endsection

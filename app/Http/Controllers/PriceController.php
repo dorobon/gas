@@ -34,7 +34,7 @@ class PriceController extends Controller
         return view('prices.cheapest', [
             'filters' => $filters,
             'results' => $priceRepository->getCheapest($filters, (int) config('fuel.cheapest_page_size')),
-            'options' => $gasStationRepository->getFilterOptions($filters),
+            'fuelOptions' => config('fuel.fuels'),
             'fuelLabel' => config('fuel.fuels.'.$filters['fuel'].'.label', $filters['fuel']),
             'metaTitle' => 'Gasolineras más baratas de hoy en España',
             'metaDescription' => 'Filtra por provincia, municipio, marca y carburante para encontrar las gasolineras más baratas de hoy y ahorrar en cada repostaje.',
@@ -52,7 +52,7 @@ class PriceController extends Controller
         return view('prices.historic', [
             'filters' => $filters,
             'history' => $priceRepository->getHistoricSeries($filters),
-            'options' => $gasStationRepository->getFilterOptions($filters),
+            'fuelOptions' => config('fuel.fuels'),
             'metaTitle' => 'Histórico del precio de la gasolina y el diésel',
             'metaDescription' => 'Analiza la evolución histórica del precio de los carburantes en España por combustible y provincia con una vista diaria clara y orientada a SEO.',
         ]);
