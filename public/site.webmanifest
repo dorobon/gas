@@ -1,0 +1,11 @@
+{
+  "name": "Gas",
+  "short_name": "Gas",
+  "description": "Portal de precios de carburantes y gasolineras en España.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#07111f",
+  "lang": "es-ES"
+}
