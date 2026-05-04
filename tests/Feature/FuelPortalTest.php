@@ -16,6 +16,7 @@ class FuelPortalTest extends TestCase
 
         $response
             ->assertOk()
+            ->assertHeader('cache-control', 'max-age=900, public, s-maxage=900, stale-while-revalidate=3600')
             ->assertSee('Precio de la gasolina y el diésel hoy en España')
             ->assertSee('Resumen nacional actual')
             ->assertSee('dashboard-history-chart');
@@ -39,7 +40,8 @@ class FuelPortalTest extends TestCase
         $response
             ->assertOk()
             ->assertSee('Gasolineras más baratas')
-            ->assertSee('Ranking ordenado por precio');
+            ->assertSee('Ranking ordenado por precio')
+            ->assertSee('BreadcrumbList', false);
     }
 
     public function test_filtered_pages_are_marked_as_noindex_to_reduce_duplicate_content(): void
@@ -105,6 +107,8 @@ class FuelPortalTest extends TestCase
             ->assertSee('Abrir en OpenStreetMap')
             ->assertSee('station-history-chart')
             ->assertSee('Widget social y OG image')
+            ->assertSee('Gasolineras')
+            ->assertSee('BreadcrumbList', false)
             ->assertSee('api/social-cards/render.jpg', false)
             ->assertSee('og:image', false);
 
@@ -125,6 +129,7 @@ class FuelPortalTest extends TestCase
 
         $metadataResponse
             ->assertOk()
+            ->assertHeader('cache-control', 'max-age=86400, public, s-maxage=86400, stale-while-revalidate=3600')
             ->assertJsonPath('station.id', $station->id)
             ->assertJsonPath('preset.social', 'twitter')
             ->assertJsonPath('preset.type', 'summary_large_image')
@@ -152,6 +157,7 @@ class FuelPortalTest extends TestCase
     {
         $this->get('/sitemap.xml')
             ->assertOk()
+            ->assertHeader('cache-control', 'max-age=3600, public, s-maxage=3600, stale-while-revalidate=86400')
             ->assertSee('<?xml version="1.0" encoding="UTF-8"?>', false)
             ->assertSee(route('prices.index'), false)
             ->assertSee(route('reports.index'), false);

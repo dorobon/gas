@@ -3,7 +3,12 @@
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StationController;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Carbon;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/sitemap.xml', function () {
@@ -64,10 +69,25 @@ Route::get('/sitemap.xml', function () {
 		->push('</urlset>')
 		->implode('');
 
-	return response()
-		->make($xml)
-		->header('Content-Type', 'application/xml');
-})->name('seo.sitemap');
+	$response = response()->make($xml);
+	$response->headers->set('Content-Type', 'application/xml');
+	$response->setPublic();
+	$response->setMaxAge(3600);
+	$response->setSharedMaxAge(3600);
+	$response->headers->addCacheControlDirective('stale-while-revalidate', 86400);
+	$response->setLastModified(Carbon::parse($urls->max('lastmod') ?? now()->toDateString()));
+
+	return $response;
+})
+	->middleware('cache.headers:public;max_age=3600;s_maxage=3600')
+	->withoutMiddleware([
+		EncryptCookies::class,
+		AddQueuedCookiesToResponse::class,
+		StartSession::class,
+		ShareErrorsFromSession::class,
+		ValidateCsrfToken::class,
+	])
+	->name('seo.sitemap');
 
 Route::get('/', [PriceController::class, 'index'])->name('prices.index');
 Route::get('/baratas', [PriceController::class, 'cheapest'])->name('prices.cheapest');

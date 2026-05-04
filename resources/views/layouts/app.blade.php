@@ -252,6 +252,22 @@
             gap: 1rem;
             flex-wrap: wrap;
         }
+        .breadcrumbs {
+            margin-bottom: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            align-items: center;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+        .breadcrumbs a {
+            color: var(--brand);
+            font-weight: 700;
+        }
+        .breadcrumbs span[aria-hidden="true"] {
+            opacity: 0.7;
+        }
         .eyebrow {
             display: inline-flex;
             padding: 0.4rem 0.75rem;
@@ -566,6 +582,7 @@
     @stack('social_meta')
     @stack('structured_data')
     @stack('head')
+    @vite(['resources/js/app.js'])
 </head>
 <body>
 <header class="site-header">
@@ -584,7 +601,10 @@
                 <a href="{{ route('reports.index') }}" class="{{ request()->routeIs('reports.*') ? 'is-active' : '' }}">Informes</a>
             </nav>
 
-            <button type="button" class="theme-toggle" data-theme-toggle>Modo claro / oscuro</button>
+            <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false">
+                <span data-theme-icon aria-hidden="true">🌙</span>
+                <span data-theme-label>Modo oscuro</span>
+            </button>
         </div>
     </div>
 </header>
@@ -618,7 +638,7 @@
             </div>
             <div class="footer-bottom">
                 <p>Fuente principal prevista: Geoportal Gasolineras y catálogo de datos abiertos del Ministerio.</p>
-                <p>SEO con menos humo y más surtidor útil.</p>
+                <p><a href="{{ url('/sitemap.xml') }}">Sitemap XML</a> · HTML optimizado con carga diferida de gráficos y catálogos JSON.</p>
             </div>
         </footer>
     </div>

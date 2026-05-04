@@ -17,7 +17,13 @@ class StationSocialCardController extends Controller
         $validated = $this->validateRequest($request);
         $station = $this->resolveStation((int) $validated['id']);
 
-        return response()->json($socialCards->describe($station, $validated));
+        return response()->json(
+            $socialCards->describe($station, $validated),
+            200,
+            [
+                'Cache-Control' => 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=3600',
+            ]
+        );
     }
 
     public function image(Request $request, SocialCardLibrary $socialCards): BinaryFileResponse

@@ -7,6 +7,12 @@
         $formatPrice = fn ($value) => $value !== null ? number_format((float) $value, 3, ',', '.') . ' €/l' : 'Sin dato';
     @endphp
 
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="{{ route('prices.index') }}">Inicio</a>
+        <span aria-hidden="true">/</span>
+        <span>Buscador de gasolineras</span>
+    </nav>
+
     <section class="hero">
         <span class="eyebrow">Buscador gasolineras España</span>
         <h1>Busca gasolineras por provincia, municipio o marca</h1>
@@ -81,4 +87,27 @@
             <div class="empty-state">No se han encontrado gasolineras con los filtros indicados.</div>
         @endif
     </section>
+
+    @push('structured_data')
+        <script type="application/ld+json">
+            {!! json_encode([
+                '@context' => 'https://schema.org',
+                '@type' => 'BreadcrumbList',
+                'itemListElement' => [
+                    [
+                        '@type' => 'ListItem',
+                        'position' => 1,
+                        'name' => 'Inicio',
+                        'item' => route('prices.index'),
+                    ],
+                    [
+                        '@type' => 'ListItem',
+                        'position' => 2,
+                        'name' => 'Buscador de gasolineras',
+                        'item' => route('stations.search'),
+                    ],
+                ],
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+        </script>
+    @endpush
 @endsection

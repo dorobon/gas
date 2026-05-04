@@ -6,6 +6,14 @@
 @section('meta_updated_time', $publishedAt->toIso8601String())
 
 @section('content')
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="{{ route('prices.index') }}">Inicio</a>
+        <span aria-hidden="true">/</span>
+        <a href="{{ route('reports.index') }}">Informes</a>
+        <span aria-hidden="true">/</span>
+        <span>{{ $report['title'] }}</span>
+    </nav>
+
     <article class="hero article">
         <span class="eyebrow">{{ $report['category'] }}</span>
         <h1>{{ $report['title'] }}</h1>
@@ -53,6 +61,32 @@
                 'mainEntityOfPage' => route('reports.show', $report['slug']),
                 'articleSection' => $report['category'],
                 'inLanguage' => str_replace('_', '-', app()->getLocale()),
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+        </script>
+        <script type="application/ld+json">
+            {!! json_encode([
+                '@context' => 'https://schema.org',
+                '@type' => 'BreadcrumbList',
+                'itemListElement' => [
+                    [
+                        '@type' => 'ListItem',
+                        'position' => 1,
+                        'name' => 'Inicio',
+                        'item' => route('prices.index'),
+                    ],
+                    [
+                        '@type' => 'ListItem',
+                        'position' => 2,
+                        'name' => 'Informes',
+                        'item' => route('reports.index'),
+                    ],
+                    [
+                        '@type' => 'ListItem',
+                        'position' => 3,
+                        'name' => $report['title'],
+                        'item' => route('reports.show', $report['slug']),
+                    ],
+                ],
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
         </script>
     @endpush

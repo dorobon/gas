@@ -40,6 +40,14 @@
         ];
     @endphp
 
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="{{ route('prices.index') }}">Inicio</a>
+        <span aria-hidden="true">/</span>
+        <a href="{{ route('stations.search') }}">Gasolineras</a>
+        <span aria-hidden="true">/</span>
+        <span>{{ $station->brand ?: 'Gasolinera' }}</span>
+    </nav>
+
     <section class="hero">
         <div class="hero__brand">
             <x-brand-badge :brand="$station->brand" size="xl" />
@@ -285,6 +293,32 @@
                     'latitude' => $station->latitude,
                     'longitude' => $station->longitude,
                 ] : null,
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+        </script>
+        <script type="application/ld+json">
+            {!! json_encode([
+                '@context' => 'https://schema.org',
+                '@type' => 'BreadcrumbList',
+                'itemListElement' => [
+                    [
+                        '@type' => 'ListItem',
+                        'position' => 1,
+                        'name' => 'Inicio',
+                        'item' => route('prices.index'),
+                    ],
+                    [
+                        '@type' => 'ListItem',
+                        'position' => 2,
+                        'name' => 'Gasolineras',
+                        'item' => route('stations.search'),
+                    ],
+                    [
+                        '@type' => 'ListItem',
+                        'position' => 3,
+                        'name' => $station->display_name,
+                        'item' => route('stations.show', [$station, $station->route_slug]),
+                    ],
+                ],
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
         </script>
     @endpush
