@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Libraries\Fuel\FuelDataBootstrapLibrary;
 use App\Libraries\Fuel\FuelImportLibrary;
 use App\Models\GasStation;
 use App\Models\Price;
@@ -169,16 +170,27 @@ class FuelPortalTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_official_import_falls_back_to_rest_when_xls_cannot_be_parsed(): void
+    public function test_import_endpoint_rejects_legacy_non_rest_source(): void
     {
+        config()->set('fuel.import_token', 'rest-only-token');
+
+        $this->postJson('/api/update-prices', [
+            'token' => 'rest-only-token',
+            'source' => 'xls',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['source']);
+    }
+
+    public function test_official_import_uses_rest_json_endpoint_with_accept_header(): void
+    {
+        app(FuelDataBootstrapLibrary::class)->ensureReady();
+
         Price::query()->delete();
         GasStation::query()->delete();
 
-        config()->set('fuel.source_url', 'https://example.test/precios.xls');
         config()->set('fuel.rest_source_url', 'https://example.test/precios.json');
 
         Http::fake([
-            'https://example.test/precios.xls' => Http::response('esto no es un excel válido', 200),
             'https://example.test/precios.json' => Http::response([
                 'Fecha' => '30/04/2026 07:00:00',
                 'ListaEESSPrecio' => [
@@ -210,8 +222,15 @@ class FuelPortalTest extends TestCase
 
         $summary = app(FuelImportLibrary::class)->importFromOfficialSource();
 
-        $this->assertTrue($summary['fallback_used']);
+        Http::assertSent(function ($request): bool {
+            return $request->url() === 'https://example.test/precios.json'
+                && $request->method() === 'GET'
+                && str_contains((string) $request->header('Accept')[0], 'application/json');
+        });
+
+        $this->assertFalse($summary['fallback_used']);
         $this->assertSame('rest', $summary['source_type']);
+        $this->assertSame('https://example.test/precios.json', $summary['source']);
         $this->assertSame(1, GasStation::query()->count());
         $this->assertSame(1, Price::query()->count());
         $this->assertSame('REST DEMO', GasStation::query()->firstOrFail()->brand);

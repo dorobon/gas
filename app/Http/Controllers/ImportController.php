@@ -15,7 +15,7 @@ class ImportController extends Controller
     {
         $request->validate([
             'token' => ['nullable', 'string'],
-            'source' => ['nullable', 'string', Rule::in(['auto', 'xls', 'rest'])],
+            'source' => ['nullable', 'string', Rule::in(['rest'])],
         ]);
 
         $configuredToken = (string) config('fuel.import_token');
@@ -24,10 +24,7 @@ class ImportController extends Controller
         abort_unless($configuredToken !== '' && hash_equals($configuredToken, $receivedToken), Response::HTTP_FORBIDDEN, 'Token de importación no válido.');
 
         try {
-            $summary = $fuelImportLibrary->importFromOfficialSource(
-                null,
-                (string) $request->input('source', config('fuel.import_strategy', 'auto')),
-            );
+            $summary = $fuelImportLibrary->importFromOfficialSource();
         } catch (Throwable $throwable) {
             return response()->json([
                 'message' => 'La importación oficial ha fallado.',

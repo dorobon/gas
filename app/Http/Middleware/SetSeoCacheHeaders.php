@@ -13,7 +13,11 @@ class SetSeoCacheHeaders
         /** @var Response $response */
         $response = $next($request);
 
-        if ($request->is('sitemap.xml')) {
+        if ($request->routeIs('prices.index', 'prices.cheapest', 'prices.historic', 'stations.search', 'stations.show')) {
+            $response->headers->set('Cache-Control', 'public, max-age=900, s-maxage=900, stale-while-revalidate=3600');
+        }
+
+        if ($request->routeIs('seo.sitemap')) {
             $response->headers->set('Cache-Control', 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400');
         }
 

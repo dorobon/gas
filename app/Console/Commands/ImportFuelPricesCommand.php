@@ -8,7 +8,7 @@ use Throwable;
 
 class ImportFuelPricesCommand extends Command
 {
-    protected $signature = 'fuel:import {--url= : URL alternativa para el fichero oficial} {--source=auto : auto, xls o rest}';
+    protected $signature = 'fuel:import {--url= : URL alternativa para el endpoint REST oficial} {--source=rest : Solo se admite rest}';
 
     protected $description = 'Descarga e importa el fichero oficial de precios de carburantes';
 
@@ -16,11 +16,14 @@ class ImportFuelPricesCommand extends Command
     {
         $this->components->info('Iniciando importación oficial de carburantes...');
 
+        if ((string) $this->option('source') !== 'rest') {
+            $this->components->error('La importación oficial solo admite la fuente REST JSON. Usa --source=rest o no indiques la opción.');
+
+            return self::FAILURE;
+        }
+
         try {
-            $summary = $fuelImportLibrary->importFromOfficialSource(
-                $this->option('url') ?: null,
-                (string) $this->option('source'),
-            );
+            $summary = $fuelImportLibrary->importFromOfficialSource($this->option('url') ?: null);
         } catch (Throwable $throwable) {
             $this->components->error($throwable->getMessage());
 

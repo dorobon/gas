@@ -2,9 +2,9 @@
 
 return [
     'source_url' => env('PRICE_IMPORT_SOURCE', 'https://geoportalgasolineras.es/resources/files/preciosEESS_es.xls'),
-    'rest_source_url' => env('PRICE_IMPORT_REST_SOURCE', 'https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/'),
+    'rest_source_url' => env('PRICE_IMPORT_REST_SOURCE', 'https://energia.serviciosmin.gob.es/ServiciosRestCarburantes/PreciosCarburantes/EstacionesTerrestres/'),
     'import_token' => env('PRICE_IMPORT_TOKEN', ''),
-    'import_strategy' => env('PRICE_IMPORT_STRATEGY', 'auto'),
+    'import_strategy' => env('PRICE_IMPORT_STRATEGY', 'rest'),
     'default_fuel' => 'diesel_a',
     'featured_fuels' => [
         'diesel_a' => ['label' => 'Gasóleo A', 'short' => 'Diésel A'],

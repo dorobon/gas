@@ -17,7 +17,7 @@ El proyecto usa SQLite por defecto y puede funcionar con datos demo o con import
 - SQLite por defecto para desarrollo ligero
 - esquema SQL propio en `database/sql/sqlite/`
 - referencia MySQL en `database/sql/mysql/`
-- importación oficial desde XLS con fallback REST JSON
+- importación oficial exclusivamente por REST JSON
 - scheduler diario a las `07:00`
 - endpoint protegido para importación manual
 - API de miniaturas OG/Twitter en JPG por estación
@@ -98,23 +98,25 @@ Además, en `local` y `testing`, si no hay datos se cargan datos demo automátic
 
 ## Importación oficial
 
-La importación soporta dos fuentes oficiales:
+La importación oficial usa exclusivamente el servicio REST JSON del Ministerio:
 
-- XLS: `https://geoportalgasolineras.es/resources/files/preciosEESS_es.xls`
-- REST JSON: `https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/`
+- `https://energia.serviciosmin.gob.es/ServiciosRestCarburantes/PreciosCarburantes/EstacionesTerrestres/`
 
-La estrategia por defecto es `auto`:
+La petición se realiza por `GET` y el cliente solicita JSON mediante la cabecera `Accept: application/json`.
 
-1. intenta XLS
-2. si el XLS falla o no se puede parsear, cae automáticamente al REST JSON
+Durante la validación del cambio, el endpoint respondió correctamente con:
+
+- `HTTP 200`
+- `Content-Type: application/json; charset=utf-8`
+- `ResultadoConsulta: OK`
+- más de `11.000` estaciones en `ListaEESSPrecio`
 
 Variables relevantes en `.env`:
 
 ```dotenv
 PRICE_IMPORT_TOKEN=change-me-before-production
-PRICE_IMPORT_SOURCE=https://geoportalgasolineras.es/resources/files/preciosEESS_es.xls
-PRICE_IMPORT_REST_SOURCE=https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/
-PRICE_IMPORT_STRATEGY=auto
+PRICE_IMPORT_REST_SOURCE=https://energia.serviciosmin.gob.es/ServiciosRestCarburantes/PreciosCarburantes/EstacionesTerrestres/
+PRICE_IMPORT_STRATEGY=rest
 SOCIAL_CARD_CACHE_TTL=1440
 SOCIAL_CARD_NODE_BINARY=node
 ```
@@ -124,7 +126,6 @@ SOCIAL_CARD_NODE_BINARY=node
 ```bash
 php artisan fuel:import
 php artisan fuel:import --source=rest
-php artisan fuel:import --source=xls
 ```
 
 También puedes indicar una URL alternativa:
@@ -143,7 +144,7 @@ Admite:
 
 - header `X-Import-Token`
 - body `token`
-- body `source=auto|xls|rest`
+- body opcional `source=rest`
 
 ## Social cards JPG para OG, Twitter, WhatsApp y más
 
@@ -210,7 +211,7 @@ El manifest opcional se guarda en:
 ```bash
 php artisan fuel:about
 php artisan fuel:seed-demo --refresh
-php artisan fuel:import --source=auto
+php artisan fuel:import --source=rest
 php artisan fuel:brand-logos:audit
 ```
 
@@ -260,8 +261,9 @@ Si tu entorno CLI pierde SQLite por configuración local, revisa `php.ini` antes
 
 ## Notas operativas
 
-- `PhpSpreadsheet` se usa para leer el XLS oficial.
+- El importador oficial consulta el endpoint `EstacionesTerrestres` y procesa `ListaEESSPrecio` directamente desde JSON.
 - Para evitar romper el bootstrap en shells problemáticas, la app comprueba SQLite antes de inicializar el esquema automático.
+- Si cambias `PRICE_IMPORT_REST_SOURCE` o `config/fuel.php`, conviene limpiar caché de configuración con `php artisan config:clear`.
 - Si no hay datos importados, la demo mantiene la UI navegable y testeable.
 
 ## Licencia

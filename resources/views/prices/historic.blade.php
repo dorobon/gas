@@ -71,7 +71,14 @@
             <label>
                 Provincia
                 <select name="province" data-gas-catalog-province data-selected-value="{{ $filters['province'] ?? '' }}">
-                    <option value="">Cargando provincias...</option>
+                    @if(!empty($provinces))
+                        <option value="">Todas</option>
+                        @foreach($provinces as $prov)
+                            <option value="{{ $prov }}" @if(($filters['province'] ?? '') === $prov) selected @endif>{{ $prov }}</option>
+                        @endforeach
+                    @else
+                        <option value="">Cargando provincias...</option>
+                    @endif
                 </select>
             </label>
             <label>

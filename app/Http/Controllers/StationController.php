@@ -23,6 +23,7 @@ class StationController extends Controller
         return view('stations.search', [
             'filters' => $filters,
             'stations' => $gasStationRepository->search($filters, (int) config('fuel.search_page_size')),
+            'provinces' => $gasStationRepository->getProvinces(),
             'metaTitle' => 'Buscador de gasolineras en España',
             'metaDescription' => 'Busca gasolineras por provincia, municipio, marca o dirección y consulta sus precios actualizados de gasolina y diésel.',
         ]);

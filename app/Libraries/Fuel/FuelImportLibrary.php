@@ -15,30 +15,9 @@ use RuntimeException;
 
 class FuelImportLibrary
 {
-    public function importFromOfficialSource(?string $sourceUrl = null, string $strategy = 'auto'): array
+    public function importFromOfficialSource(?string $sourceUrl = null, ?string $strategy = null): array
     {
-        $strategy = in_array($strategy, ['auto', 'xls', 'rest'], true)
-            ? $strategy
-            : (string) config('fuel.import_strategy', 'auto');
-
-        if ($strategy === 'rest') {
-            return $this->importFromRestSource($sourceUrl ?: (string) config('fuel.rest_source_url'));
-        }
-
-        try {
-            return $this->importFromXlsSource($sourceUrl ?: (string) config('fuel.source_url'));
-        } catch (\Throwable $throwable) {
-            if ($strategy === 'xls') {
-                throw $throwable;
-            }
-
-            report($throwable);
-
-            return $this->importFromRestSource(
-                (string) config('fuel.rest_source_url'),
-                $throwable,
-            );
-        }
+        return $this->importFromRestSource($sourceUrl ?: (string) config('fuel.rest_source_url'));
     }
 
     public function importFromXlsSource(string $url): array
@@ -69,7 +48,7 @@ class FuelImportLibrary
         return $summary;
     }
 
-    public function importFromRestSource(string $url, ?\Throwable $fallbackReason = null): array
+    public function importFromRestSource(string $url): array
     {
         $response = Http::timeout(180)
             ->retry(2, 1200)
@@ -125,8 +104,8 @@ class FuelImportLibrary
             'latest_collected_at' => $latestCollectedAt?->toIso8601String(),
             'source' => $url,
             'source_type' => 'rest',
-            'fallback_used' => $fallbackReason !== null,
-            'fallback_reason' => $fallbackReason?->getMessage(),
+            'fallback_used' => false,
+            'fallback_reason' => null,
         ];
     }
 
